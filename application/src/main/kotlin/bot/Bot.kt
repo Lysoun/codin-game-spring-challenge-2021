@@ -37,9 +37,11 @@ class Wait: Action() {
     override fun toString() = "WAIT"
 }
 
-class Complete(private val index: Int): Action() {
-    override fun toString() = "COMPLETE $index"
+abstract class ActionOnTree(private val index: Int, private val keyWord: String): Action() {
+    override fun toString(): String = "$keyWord $index"
 }
+
+class Complete(index: Int): ActionOnTree(index, "COMPLETE")
 
 data class Turn(
     val day: Int,
