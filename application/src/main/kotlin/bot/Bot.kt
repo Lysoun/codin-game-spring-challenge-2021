@@ -100,16 +100,18 @@ fun readTurn(): Turn {
 
 
 fun chooseAction(cells: Map<Int, Cell>, turn: Turn): Action {
-    if(turn.sun >= 4) {
-        val treeToComplete = turn.trees
-            .filter { it.value.isMine }
-            .filter { !it.value.isDormant }
+    val myActiveTrees = turn.trees
+        .filter { it.value.isMine }
+        .filter { !it.value.isDormant }
+
+    return if(turn.sun >= 4) {
+        val treeToComplete = myActiveTrees
             .map { it.key to cells[it.key]!!.richness }
             .maxBy { it.second }!!
             .first
-        return Complete(treeToComplete)
+        Complete(treeToComplete)
     } else {
-        return Wait()
+        Wait()
     }
 }
 
