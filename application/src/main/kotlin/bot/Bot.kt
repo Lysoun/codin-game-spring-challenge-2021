@@ -43,6 +43,8 @@ abstract class ActionOnTree(private val index: Int, private val keyWord: String)
 
 class Complete(index: Int): ActionOnTree(index, "COMPLETE")
 
+class Grow(index: Int): ActionOnTree(index, "GROW")
+
 data class Turn(
     val day: Int,
     val nutrients: Int,
