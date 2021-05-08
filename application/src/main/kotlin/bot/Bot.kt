@@ -20,7 +20,7 @@ fun readCells(numberOfCells: Int): Map<Int, Cell> {
 
 data class Tree(
     val index: Int,
-    val size: Int,
+    var size: Int,
     val isMine: Boolean,
     val isDormant: Boolean
 )
@@ -31,19 +31,38 @@ abstract class Action {
     }
 
     abstract override fun toString(): String
+
+    fun performActionFluent(trees: MutableMap<Int, Tree>): Action {
+        performAction(trees)
+        return this
+    }
+
+    abstract fun performAction(trees: MutableMap<Int, Tree>)
 }
 
 class Wait: Action() {
     override fun toString() = "WAIT"
+
+    override fun performAction(trees: MutableMap<Int, Tree>) {
+
+    }
 }
 
-abstract class ActionOnTree(private val index: Int, private val keyWord: String): Action() {
+abstract class ActionOnTree(protected val index: Int, private val keyWord: String): Action() {
     override fun toString(): String = "$keyWord $index"
 }
 
-class Complete(index: Int): ActionOnTree(index, "COMPLETE")
+class Complete(index: Int): ActionOnTree(index, "COMPLETE") {
+    override fun performAction(trees: MutableMap<Int, Tree>) {
+        trees.remove(index)
+    }
+}
 
-class Grow(index: Int): ActionOnTree(index, "GROW")
+class Grow(index: Int): ActionOnTree(index, "GROW") {
+    override fun performAction(trees: MutableMap<Int, Tree>) {
+        ++trees[index]!!.size
+    }
+}
 
 data class Turn(
     val day: Int,
@@ -79,14 +98,15 @@ fun readTurn(): Turn {
     return Turn(day, nutrients, sun, score, oppSun, oppScore, oppIsWaiting, trees)
 }
 
+
 fun chooseAction(cells: Map<Int, Cell>, turn: Turn): Action {
     if(turn.sun >= 4) {
         val treeToComplete = turn.trees
             .filter { it.value.isMine }
+            .filter { !it.value.isDormant }
             .map { it.key to cells[it.key]!!.richness }
             .maxBy { it.second }!!
             .first
-        turn.trees.remove(treeToComplete)
         return Complete(treeToComplete)
     } else {
         return Wait()
@@ -104,6 +124,6 @@ fun main(args: Array<String>) {
         // Ignore further input because I don't care
         repeat((0 until readLineToInt()).count()) { readLine() }
 
-        chooseAction(cells, turn).printAction()
+        chooseAction(cells, turn).performActionFluent(turn.trees).printAction()
     }
 }
