@@ -22,7 +22,7 @@ data class Tree(
     val index: Int,
     var size: Int,
     val isMine: Boolean,
-    val isDormant: Boolean
+    var isDormant: Boolean
 )
 
 abstract class Action {
@@ -61,6 +61,7 @@ class Complete(index: Int): ActionOnTree(index, "COMPLETE") {
 class Grow(index: Int): ActionOnTree(index, "GROW") {
     override fun performAction(trees: MutableMap<Int, Tree>) {
         ++trees[index]!!.size
+        trees[index]!!.isDormant = true
     }
 }
 
@@ -98,18 +99,42 @@ fun readTurn(): Turn {
     return Turn(day, nutrients, sun, score, oppSun, oppScore, oppIsWaiting, trees)
 }
 
+fun computeGrowthCost(treeSize: Int, trees: Collection<Tree>): Int {
+    var cost = if (treeSize == 1) {
+        3
+    } else {
+        7
+    }
+
+    cost += trees.filter { it.size == treeSize + 1 }.size
+
+    return cost
+}
+
+fun findTreeWithMaxRichness(cells: Map<Int, Cell>, trees: List<Tree>): Int {
+    return trees.maxBy { cells[it.index]!!.richness }!!.index
+}
 
 fun chooseAction(cells: Map<Int, Cell>, turn: Turn): Action {
     val myActiveTrees = turn.trees
         .filter { it.value.isMine }
         .filter { !it.value.isDormant }
 
-    return if(turn.sun >= 4) {
-        val treeToComplete = myActiveTrees
-            .map { it.key to cells[it.key]!!.richness }
-            .maxBy { it.second }!!
-            .first
-        Complete(treeToComplete)
+    val myTreesBySize = myActiveTrees
+        .map { it.value.size to it.value }
+        .groupBy { it.first }
+        .map { entry -> entry.key to entry.value.map { it.second } }
+        .toMap()
+
+    return if (turn.sun >= 4 && !myTreesBySize[3].isNullOrEmpty()) {
+        // Complete tree if possible
+        Complete(findTreeWithMaxRichness(cells, myTreesBySize[3]!!))
+    } else if (!myTreesBySize[2].isNullOrEmpty() && (7 + myTreesBySize[2]!!.size) <= turn.sun) {
+        // Grow a tree of size 2 if it is possible
+        Grow(findTreeWithMaxRichness(cells, myTreesBySize[2]!!))
+    } else if (!myTreesBySize[1].isNullOrEmpty() && (3 + myTreesBySize[1]!!.size) <= turn.sun) {
+        // Grow a tree of size 1 if it is possible
+        Grow(findTreeWithMaxRichness(cells, myTreesBySize[1]!!))
     } else {
         Wait()
     }
